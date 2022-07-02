@@ -37,6 +37,7 @@ async function run(){
         const productCollection = client.db('eMart').collection('product');
         const userCollection = client.db('eMart').collection('users');
         const taskCollection = client.db('dailyTask').collection('tasks');
+        const completedCollection = client.db('dailyTask').collection('completeTask');
 
         app.get('/product', async(req, res) =>{
             const page = parseInt(req.query.page);
@@ -100,6 +101,27 @@ async function run(){
 
         app.get('/addTask', async (req, res) => {            
             const result = await taskCollection.find({}).toArray();
+            res.send(result)
+        })
+
+        app.post('/complete', async (req, res) => {;
+            const task = req.body;
+            const result = await completedCollection.insertOne(task);
+            res.send(result)
+
+        });
+
+         app.delete('/addTask/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id)
+            const query = {_id: ObjectId(id)};
+            const result = await taskCollection.deleteOne(query);
+            res.send(result)
+
+        });
+
+        app.get('/completedTask', async (req, res)=>{
+            const result = await completedCollection.find({}).toArray();
             res.send(result)
         })
 
