@@ -37,12 +37,25 @@ async function run(){
         const categoriesCollection = client.db('eMart').collection('categories');
         const productCollection = client.db('eMart').collection('product');
         const userCollection = client.db('eMart').collection('users');
+        const categoryCollection = client.db('eMart').collection('addcatagories');
         // const taskCollection = client.db('dailyTask').collection('tasks');
         // const completedCollection = client.db('dailyTask').collection('completeTask');
 
+        const verifyAdmin = async (req, res, next) => {
+            const requester = req.decoded.email;
+            const requesterAccount = await userCollection.findOne({email: requester})
+            if(requesterAccount.role === 'admin'){
+                next();
+        }
+        else{
+            res.status(403).send({message: 'forbidden'});
+          }
+        }
+
+
         app.get('/categories', async(req, res) => {
             const query = {};
-            const cursor = categoriesCollection.find(query);
+            const cursor = categoriesCollection.find(query).project({category: 1, img:1, description: 1, seller: 1});
             const categories = await cursor.toArray();
             res.send(categories);
         })
@@ -80,21 +93,18 @@ async function run(){
         })
 
 
-        app.put('/user/admin/:email', verifyJWT,  async(req, res) => {
+        app.put('/user/admin/:email', verifyJWT, verifyAdmin, async(req, res) => {
             const email = req.params.email;
-            const requester = req.decoded.email;
-            const requesterAccount = await userCollection.findOne({email: requester})
-            if(requesterAccount.role === 'admin'){
+
+            
                 const filter = { email: email };
                 const updateDoc = {
                     $set: { role: 'admin' },
                 };
                 const result = await userCollection.updateOne(filter, updateDoc);
                 res.send(result);
-            }
-          else{
-            res.status(403).send({message: 'forbidden'});
-          }
+            
+          
         })
 
 
@@ -129,6 +139,17 @@ async function run(){
             console.log(keys);
             res.send(products);
             
+        })
+
+        app.get('/addCategory', async(req, res) =>{
+            const products = await categoryCollection.find().toArray();
+            res.send(products);
+        })
+
+        app.post('/addCategory',  async(req, res) => {
+            const category = req.body;
+            const result = await categoryCollection.insertOne(category);
+            res.send(result);
         })
 
         // //to do list
